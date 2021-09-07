@@ -1,0 +1,19 @@
+{
+    "name": "djh/cachesystem",
+    "description": "a cache system",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Cachesystem\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Djh",
+            "email": "893574867@qq.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
