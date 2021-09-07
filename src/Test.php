@@ -7,7 +7,7 @@
  */
 
 
-namespace CacheSystem;
+namespace Cachesystem;
 
 class Test
 {
