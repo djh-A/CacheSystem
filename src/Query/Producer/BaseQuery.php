@@ -24,6 +24,6 @@ abstract class BaseQuery
      */
     public static function make()
     {
-        return static();
+        return new static();
     }
 }

@@ -9,20 +9,26 @@
 
 namespace CacheSystem\Query\Factory;
 
-use CacheSystem\Query\Producer\ImpalaSingleQuery;
+use CacheSystem\Query\Producer\ImpalaQuery;
 
+
+/**
+ * Class Query
+ * @package CacheSystem\Query\Factory
+ */
 class Query extends QueryFactory
 {
 
     /**
-     * @return ImpalaSingleQuery
+     * @return ImpalaQuery
      */
-    public function ImpalaSingleQuery()
+    public function ImpalaQuery()
     {
-        if (null === $this->impalaSingleQuery)
-            $this->impalaSingleQuery = ImpalaSingleQuery::make();
+        if (null === $this->impala)
+            $this->impala = ImpalaQuery::make();
 
-        return $this->impalaSingleQuery;
+        return $this->impala;
     }
+
 
 }

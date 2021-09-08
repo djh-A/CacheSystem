@@ -21,11 +21,11 @@ abstract class QueryFactory
     /**
      * @var QueryInterface
      */
-    protected $impalaSingleQuery;
+    protected $impala;
 
     /**
      * @return mixed
      */
-    abstract public function ImpalaSingleQuery();
+    abstract public function ImpalaQuery();
 
 }

@@ -10,18 +10,20 @@
 namespace CacheSystem\Facade;
 
 
+use CacheSystem\Query\Producer\QueryInterface;
 use Illuminate\Support\Facades\Facade;
 
 /**
  * Class Query
  * @package CacheSystem\Facade
+ * @method static QueryInterface ImpalaQuery()
  */
 class Query extends Facade
 {
     /**
      * @return string
      */
-    public function getFacadeAccessor()
+    public static function getFacadeAccessor()
     {
         return 'query';
     }

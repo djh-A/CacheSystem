@@ -24,7 +24,6 @@ class QueryServiceProvider extends ServiceProvider
      */
     public function register()
     {
-//        $this->app->singleton('query', fn($app) => new Query($app));
-        $this->app->singleton('query', fn($app) => new Query($app));
+        $this->app->singleton('query', fn() => new Query());
     }
 }
