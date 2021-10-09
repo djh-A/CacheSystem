@@ -24,8 +24,9 @@ abstract class QueryFactory
     protected $impala;
 
     /**
+     * @param null $sql
      * @return mixed
      */
-    abstract public function ImpalaQuery();
+    abstract public function ImpalaQuery($sql = null);
 
 }

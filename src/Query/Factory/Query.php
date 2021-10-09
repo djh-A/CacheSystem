@@ -20,12 +20,18 @@ class Query extends QueryFactory
 {
 
     /**
-     * @return ImpalaQuery
+     * Impala query
+     *
+     * @param null $sql
+     * @return ImpalaQuery|mixed
      */
-    public function ImpalaQuery()
+    public function ImpalaQuery($sql = null)
     {
         if (null === $this->impala)
             $this->impala = ImpalaQuery::make();
+
+        if ($sql)
+            return $this->impala->get($sql);
 
         return $this->impala;
     }

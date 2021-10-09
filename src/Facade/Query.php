@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * Class Query
  * @package CacheSystem\Facade
- * @method static QueryInterface ImpalaQuery()
+ * @method static  QueryInterface ImpalaQuery(array|string $sql=null)
  */
 class Query extends Facade
 {

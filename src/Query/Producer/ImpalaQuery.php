@@ -10,7 +10,9 @@
 namespace CacheSystem\Query\Producer;
 
 
+use App\Components\DwQueryClient;
 use App\Components\ThriftQuery\ThriftQuery;
+use App\Models\Remote\Product;
 
 /**
  * Class ImpalaQuery
@@ -24,12 +26,12 @@ class ImpalaQuery extends BaseQuery implements QueryInterface
      */
     public function get($sql)
     {
+
         if (is_callable($sql))
             $sql = call_user_func($sql);
 
-        if (is_array($sql)) {
-            return;
-        }
+        if (is_array($sql))
+            return DwQueryClient::query($sql);
 
         return (new ThriftQuery())->queryAll($sql);
     }

@@ -26,4 +26,14 @@ class QueryServiceProvider extends ServiceProvider
     {
         $this->app->singleton('query', fn() => new Query());
     }
+
+    public function boot()
+    {
+        $this->app->configure('cachesys');
+
+        $path = realpath(__DIR__ . '/../config/cache.php');
+
+        $this->mergeConfigFrom($path, 'cachesys');
+
+    }
 }
