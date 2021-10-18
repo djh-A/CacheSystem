@@ -1,0 +1,29 @@
+{
+  "mysql": {
+    "user": "root",
+    "password": "123456",
+    "host": "192.168.65.240",
+    "port": 3306,
+    "database": "gamedata",
+    "max_idle": 10,
+    "max_open": 1000,
+    "max_life": 3600
+  },
+  "redis": {
+    "password": "",
+    "host": "192.168.65.240",
+    "port": 6379,
+    "max_idle": 10,
+    "idle_timeout": 180,
+    "database": 3
+  },
+  "impala": {
+    "host": "192.168.26.112",
+    "port": 21000
+  },
+  "select": {
+    "goroutine": 3,
+    "limit": 100,
+    "sleep": 5
+  }
+}

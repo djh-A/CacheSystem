@@ -14,6 +14,8 @@ use App\Jobs\ExampleJob;
 use App\Jobs\SaveHistorySqlJob;
 use App\Models\CacheSystemConfig;
 use CacheSystem\Cache\Producer\SysCache;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Request;
 
 class SaveHistorySqlImpl implements CacheObserver
 {
@@ -28,6 +30,8 @@ class SaveHistorySqlImpl implements CacheObserver
          * @var SysCache $cache
          */
         $cache = $args[0][0];
+
+        $cache->setRoute(Request::path());
 
         $cacheKey = (array)$cache->getCacheDriver()->getCacheKey();
 
@@ -44,7 +48,9 @@ class SaveHistorySqlImpl implements CacheObserver
 
                     $attr = [
                         'data_size' => $cache->getCacheDriver()->getDataSize()[$key] ?? 0,
-                        'cache_time_consuming' => $cache->getCacheDriver()->getUseTime()
+                        'cache_time_consuming' => $cache->getCacheDriver()->getUseTime(),
+                        'route' => $cache->getRoute(),
+                        'effective_date' => Carbon::today()->toDateString()
                     ];
 
                     if ($useTime = $cache->getUseTime())
@@ -58,7 +64,9 @@ class SaveHistorySqlImpl implements CacheObserver
                         'cacheKey' => $cKey,
                         'sql' => $cache->getSql()[$key],
                         'data_size' => $cache->getCacheDriver()->getDataSize()[$key] ?? 0,
-                        'cache_time_consuming' => $cache->getCacheDriver()->getUseTime()
+                        'cache_time_consuming' => $cache->getCacheDriver()->getUseTime(),
+                        'route' => $cache->getRoute(),
+                        'effective_date' => Carbon::today()->toDateString()
                     ];
 
                     if ($useTime = $cache->getUseTime())

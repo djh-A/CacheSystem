@@ -115,6 +115,11 @@ abstract class SysCache
      */
     private $cacheResultSet = null;
 
+    /**
+     * @var string
+     */
+    private $route;
+
 
     /**
      * @var int
@@ -317,6 +322,24 @@ abstract class SysCache
     {
         $this->useTime = number_format($useTime, 6);
     }
+
+    /**
+     * @return string
+     */
+    public function getRoute(): string
+    {
+        return $this->route;
+    }
+
+    /**
+     * @param string $route
+     */
+    public function setRoute(string $route): void
+    {
+        $this->route = $route;
+    }
+
+
 
 
     /**
