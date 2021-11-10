@@ -5,9 +5,9 @@
     "host": "192.168.65.240",
     "port": 3306,
     "database": "gamedata",
-    "max_idle": 10,
-    "max_open": 1000,
-    "max_life": 3600
+    "max_idle": 1,
+    "max_open": 1,
+    "max_life": 1
   },
   "redis": {
     "password": "",
@@ -24,6 +24,17 @@
   "select": {
     "goroutine": 3,
     "limit": 100,
-    "sleep": 5
+    "sleep": 5,
+    "env": "dev"
+  },
+  "email": {
+    "host": "smtp.126.com",
+    "port": 25,
+    "user": "shiyuegame@126.com",
+    "password": "123123cc",
+    "subject": "cache-system",
+    "to": [
+      "893574867@qq.com"
+    ]
   }
 }

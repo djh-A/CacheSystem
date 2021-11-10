@@ -43,6 +43,15 @@ type (
 		Goroutine int
 		Limit     int
 		Sleep     int
+		Env       string
+	}
+	Email struct {
+		Host     string
+		Port     int
+		User     string
+		Password string
+		To       []string
+		Subject  string
 	}
 )
 
@@ -51,6 +60,7 @@ type Config struct {
 	Redis  Redis
 	Select Select
 	Impala Impala
+	Email  Email
 }
 
 var Configs *Config

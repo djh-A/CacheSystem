@@ -134,12 +134,31 @@ abstract class AbstractCache extends SysCache
         return is_array($result) ? $result : \GuzzleHttp\json_decode($result, true);
     }
 
+    public static function parseCacheKey($sql)
+    {
+        if (is_string($sql))
+            return self::removeSpaces($sql);
+
+        if (is_array($sql))
+            return array_map(function ($sql) {
+                return self::removeSpaces($sql);
+            }, $sql);
+
+        return null;
+    }
+
+    private static function removeSpaces(string $sql)
+    {
+        return md5(preg_replace('/\s+/', '', $sql));
+    }
+
     /**
      * @param $sql
      * @return array|string|string[]|null
      */
     public function generateKey($sql)
     {
+
         if (is_string($sql))
             return md5($sql);
 

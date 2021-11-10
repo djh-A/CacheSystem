@@ -15,6 +15,12 @@ import (
 	"time"
 )
 
+const (
+	REDIS_SET    = "Set"
+	REDIS_GET    = "Get"
+	REDIS_EXPIRE = "expire"
+)
+
 var Redis redis.Conn
 
 func NewRedis() {

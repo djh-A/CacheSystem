@@ -17,8 +17,9 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"math"
 	"regexp"
-	"strconv"
-	. "time"
+	"strings"
+	"sync"
+	"time"
 )
 
 const CACHE_IN = 1
@@ -40,8 +41,8 @@ type CacheSystemConfig struct {
 	CacheTimeConsuming float64
 	QueryTimeConsuming float64
 	Heat               int64
-	EffectiveDate      Time
-	UpdatedAt          Time
+	EffectiveDate      time.Time
+	UpdatedAt          time.Time
 	Route              string
 }
 
@@ -57,6 +58,8 @@ var Log = util.Log{}
 
 var redisPool *redis.Pool
 
+var wg sync.WaitGroup
+
 func before() {
 	service.NewImpala()
 	service.NewMysql()
@@ -69,13 +72,27 @@ func after() {
 }
 
 func Run() error {
+	defer func() {
+		if err := recover(); nil != err {
+			service.SendSMTPMail(fmt.Sprintf("Run error :%s", err))
+			panic(err)
+		}
+	}()
 	before()
 	redisPool = service.NewRedisPool()
+	eliminationStrategy()
 	cache := []CacheSystemConfig{}
-	service.DB.Where("isCache", CACHE_IN).Order("heat desc").Limit(config.Configs.Select.Limit).Find(&cache)
+	service.DB.Where("isCache = ?", CACHE_IN).Where("heat > ?", 1).Order("heat desc").Limit(config.Configs.Select.Limit).Find(&cache)
 	//Distribute the data evenly to each coroutine
+
 	totalLen := len(cache)
+	if totalLen == 0 {
+		return nil
+	}
 	goroutine := config.Configs.Select.Goroutine
+	if totalLen <= goroutine {
+		goroutine = totalLen
+	}
 	goLen := func() int {
 		if totalLen <= goroutine {
 			return 1
@@ -83,21 +100,19 @@ func Run() error {
 		return int(math.Ceil(float64(totalLen) / float64(goroutine)))
 	}()
 	//If the data is small, reset the custom number of coroutines
-	if goLen <= 1 {
-		goroutine = 1
-	}
+
 	signalChan := make(chan byte, goroutine)
+
 	//var goroutine = make(chan int)
 	for i := 1; i <= goroutine; i++ {
 		sliceStart := (i - 1) * goLen
 		sliceEnd := func() int {
 			if goLen+sliceStart > totalLen {
 				return totalLen
-			} else {
-				return goLen + sliceStart
 			}
-		}()
+			return goLen + sliceStart
 
+		}()
 		go goRun(cache[sliceStart:sliceEnd], signalChan)
 	}
 
@@ -112,51 +127,82 @@ func Run() error {
 	return nil
 }
 
+func eliminationStrategy() {
+	redisConn := redisPool.Get()
+	defer redisConn.Close()
+	key := "clear:heatClear"
+	response, err := redisConn.Do(service.REDIS_GET, key)
+	if err != nil {
+		Log.Infof("Redis set [%s] err = ", key, err)
+	}
+	if response == nil {
+		heatClear()
+		_, _ = redisConn.Do(service.REDIS_SET, key, true)
+		_, _ = redisConn.Do(service.REDIS_EXPIRE, key, 43200)
+	}
+}
+
+//Heat elimination strategy
+func heatClear() {
+	wg.Add(1)
+	go func() {
+		service.DB.Where("heat = ?", 1).Delete(CacheSystemConfig{})
+		wg.Done()
+		Log.Info("Cleaned up!")
+	}()
+	wg.Wait()
+}
+
 func goRun(arr []CacheSystemConfig, signalChan chan<- byte) {
 	defer func() {
 		if err := recover(); nil != err {
-			Log.Infof("Run error :%s", err)
+			Log.Error(err)
+			signalChan <- 1
+			service.SendSMTPMail(fmt.Sprintf("Go run error :%s", err))
 		}
 	}()
+
 	for _, cache := range arr {
 
 		//If the cache validity period is exceeded, then refresh the cache
-		if int(Now().Sub(cache.UpdatedAt).Seconds()) >= cache.ExpTime-int(cache.QueryTimeConsuming)-int((Duration(config.Configs.Select.Sleep)*Second).Seconds()) {
+		if int(time.Now().Sub(cache.UpdatedAt).Seconds()) >= cache.ExpTime-int(cache.QueryTimeConsuming)-int((time.Duration(config.Configs.Select.Sleep)*time.Second).Seconds()) {
 			Log.Infof("ID: %d sql cache expired and will be refreshed", cache.Id)
-			if cache.EffectiveDate.Format(util.DATEFORMAT) != Now().Format(util.DATEFORMAT) {
+			if cache.EffectiveDate.Format(util.DATEFORMAT) != time.Now().Format(util.DATEFORMAT) {
 				Log.Infof("ID：%d sql cache validity period has expired and will be replace operation", cache.Id)
 				//cache.Year()
 				//cache.Month()
 				cache.Day()
-				cache.Date()
 			}
 
 			var result []byte
-			result, cache.QueryTimeConsuming = func(t Time) ([]byte, float64) {
+			result, cache.QueryTimeConsuming = func(t time.Time) ([]byte, float64) {
 				//result, _ := service.FetchWithoutKey(cache.Sql)
-				result, _ := service.QueryAll(cache.Sql)
+				result, err := service.QueryAll(cache.Sql)
+				if err != nil {
+					panic(err)
+				}
 				//result := make([]interface{}, 7)
 				resultJson, err := json.Marshal(result)
 				if err != nil {
 					return nil, 0.0
 				}
-				return resultJson, Since(t).Seconds()
-			}(Now())
+				return resultJson, time.Since(t).Seconds()
+			}(time.Now())
 			redisConn := redisPool.Get()
 			defer redisConn.Close()
-			_, err := redisConn.Do("Set", cache.CacheKey, result)
+			_, err := redisConn.Do(service.REDIS_SET, cache.CacheKey, result)
 			if err != nil {
 				Log.Infof("Redis set err = ", err)
 				panic(fmt.Sprintf("Redis set err:%s", err))
 			}
-			_, err = redisConn.Do("expire", cache.CacheKey, cache.ExpTime)
+			_, err = redisConn.Do(service.REDIS_EXPIRE, cache.CacheKey, cache.ExpTime)
 			if err != nil {
 				Log.Infof("Redis set expire err = ", err)
 				panic(fmt.Sprintf("Redis set expire err:%s", err))
 			}
 			Log.Info("Redis cache successfully")
-			cache.UpdatedAt, _ = Parse(util.TIMESTAMPFORMAT, Now().Format(util.TIMESTAMPFORMAT))
-			cache.EffectiveDate, _ = Parse(util.DATEFORMAT, Now().Format(util.DATEFORMAT))
+			cache.UpdatedAt, _ = time.Parse(util.TIMESTAMPFORMAT, time.Now().Format(util.TIMESTAMPFORMAT))
+			cache.EffectiveDate, _ = time.Parse(util.DATEFORMAT, time.Now().Format(util.DATEFORMAT))
 			cache.DataSize = float32(len(result) * 8 / 1024)
 			service.DB.Save(&cache)
 			Log.Info("Cached data updated successfully")
@@ -200,14 +246,41 @@ func (this *CacheSystemConfig) Month() {
 }
 
 func (this *CacheSystemConfig) Day() {
-	re := regexp.MustCompile(`day\s+BETWEEN\s+(\d*)\s+AND\s+(\d*)`)
-	result := re.FindStringSubmatch(this.Sql)
-	if len(result) > 0 {
-		startDay, _ := strconv.Atoi(result[1])
-		endDay, _ := strconv.Atoi(result[1])
-		this.Sql = re.ReplaceAllStringFunc(this.Sql, func(s string) string {
-			return fmt.Sprintf("day BETWEEN %d AND %d", startDay+1, endDay+1)
-		})
+	Log.Infof("Before Sql: %s", this.Sql)
+	regDateField := strings.Join(dateField, "|")
+	re := regexp.MustCompile(fmt.Sprintf(`(%s)\s+BETWEEN\s+'(.*)'\s+AND\s+'(.*)'`, regDateField))
+	result := re.FindAllStringSubmatch(this.Sql, -1)
+	dateMap := make(map[int]map[string]time.Time)
+	for i, res := range result {
+		if len(res) > 0 {
+			startDate, _ := time.Parse(util.TIMESTAMPFORMAT, res[2])
+			endDate, _ := time.Parse(util.TIMESTAMPFORMAT, res[3])
+			newStartDate := startDate.AddDate(0, 0, 1)
+			newEndDate := endDate.AddDate(0, 0, 1)
+			date := make(map[string]time.Time)
+			date["startDate"] = newStartDate
+			date["endDate"] = newEndDate
+			dateMap[i] = date
+			//替换日期
+			this.Sql = strings.Replace(this.Sql, res[0], fmt.Sprintf("%s BETWEEN '%s' AND '%s'",
+				res[1],
+				newStartDate.Format(util.TIMESTAMPFORMAT),
+				newEndDate.Format(util.TIMESTAMPFORMAT)), -1)
+		}
 	}
+	pre := regexp.MustCompile(`AND\s*\(\s*(.*) \)`)
+	results := pre.FindAllStringSubmatch(this.Sql, -1)
+	for i, res := range results {
+		tableAlias := util.GetTableAlias(res[1])
+		if len(res) > 0 {
+			partition := util.GetPartition(res[1])
+			condition := util.SetPartitionWhereCondition(dateMap[i]["startDate"], dateMap[i]["endDate"], partition, tableAlias)
+			if partition != "" {
+				this.Sql = strings.Replace(this.Sql, res[1], condition, -1)
+			}
 
+		}
+	}
+	this.CacheKey = util.ParseCacheKey(this.Sql)
+	Log.Infof("After Sql: %s", this.Sql)
 }

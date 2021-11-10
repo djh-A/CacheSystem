@@ -72,7 +72,7 @@ class ChartCache extends SysCache
 
             $this->cacheDriver->setSql($sql);
 
-            $this->cacheDriver->setCacheKey($this->cacheDriver->generateKey($sql));
+            $this->cacheDriver->setCacheKey($this->cacheDriver::parseCacheKey($sql));
             $this->debug("初始化缓存KEY成功.");
 
             if ($this->executeDelete) {

@@ -31,3 +31,11 @@ func (this Log) Info(a ...interface{}) {
 	f := fmt.Sprintf("%s %s %s", timeInfo, level, msg)
 	fmt.Println(f)
 }
+
+func (this Log) Error(a ...interface{}) {
+	timeInfo := fmt.Sprintf("time=%s", time.Now().String())
+	level := "level=error"
+	msg := fmt.Sprintf("msg=%s", a)
+	f := fmt.Sprintf("%s %s %s", timeInfo, level, msg)
+	fmt.Println(f)
+}

@@ -65,7 +65,7 @@ class RedisCache extends AbstractCache
         if (is_array($this->sql)) {
             array_walk($this->sql, function ($cacheKey, $key) use ($result, $cache) {
                 $this->dataSize[$key] = $this->calculateTheSize(\GuzzleHttp\json_encode($result[$key]));
-                $this->db->set($this->generateKey($cacheKey), \GuzzleHttp\json_encode($result[$key]), "EX",
+                $this->db->set(self::parseCacheKey($cacheKey), \GuzzleHttp\json_encode($result[$key]), "EX",
                     $cache->expTime);
             });
 
@@ -80,7 +80,7 @@ class RedisCache extends AbstractCache
     {
         if (empty($sql)) return;
 
-        $this->cacheKey = $this->generateKey($sql);
+        $this->cacheKey = self::parseCacheKey($sql);
 
         if (is_array($this->cacheKey))
             foreach ($this->cacheKey as $cacheKey) {

@@ -11,14 +11,23 @@ package util
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/md5"
+	"fmt"
 	"io/ioutil"
 	"math"
+	"regexp"
 	"time"
 )
 
 const (
 	DATEFORMAT      = "2006-01-02"
 	TIMESTAMPFORMAT = "2006-01-02 15:04:05"
+	Y               = "2006"
+	Yy              = "06"
+	M               = "01"
+	Mm              = "1"
+	D               = "02"
+	Dd              = "2"
 )
 
 //获取2个日期相差几天
@@ -63,6 +72,12 @@ func TimeStrSubDays(t1, t2 string) (float64, time.Time, time.Time) {
 	return math.Round(time2.Sub(time1).Hours() / 24), time1, time2
 }
 
+//获取2个日期相差几天
+func TimeStrSubMonths(t1, t2 time.Time) int {
+
+	return int(t2.Month() - t1.Month())
+}
+
 //GZIPEn gzip加密
 //str:="Hello 蓝影闪电"
 //	strGZIPEn:= GZIPEn(str)
@@ -93,4 +108,10 @@ func GZIPDe(in []byte) ([]byte, error) {
 	}
 	defer reader.Close()
 	return ioutil.ReadAll(reader)
+}
+
+func ParseCacheKey(s string) string {
+	re := regexp.MustCompile(`\s+`)
+	str := re.ReplaceAllString(s, "")
+	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }

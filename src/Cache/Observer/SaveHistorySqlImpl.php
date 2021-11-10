@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Request;
 
 class SaveHistorySqlImpl implements CacheObserver
 {
-    protected $isQueue = true;
+    protected $isQueue = false;
 
     /**
      * @inheritDoc
@@ -30,7 +30,6 @@ class SaveHistorySqlImpl implements CacheObserver
          * @var SysCache $cache
          */
         $cache = $args[0][0];
-
         $cache->setRoute(Request::path());
 
         $cacheKey = (array)$cache->getCacheDriver()->getCacheKey();
@@ -66,8 +65,14 @@ class SaveHistorySqlImpl implements CacheObserver
                         'data_size' => $cache->getCacheDriver()->getDataSize()[$key] ?? 0,
                         'cache_time_consuming' => $cache->getCacheDriver()->getUseTime(),
                         'route' => $cache->getRoute(),
-                        'effective_date' => Carbon::today()->toDateString()
+                        'effective_date' => Carbon::today()->toDateString(),
+                        'created_at' => Carbon::now()->toDateTime(),
+                        'updated_at' => Carbon::now()->toDateTime()
                     ];
+
+                    preg_match("/pid\s?+=\s?+(\d+)/iu", $attr['sql'], $res);
+
+                    $attr['product_id'] = $res[1] ?? 0;
 
                     if ($useTime = $cache->getUseTime())
                         $attr = array_merge($attr, ['query_time_consuming' => $useTime]);
