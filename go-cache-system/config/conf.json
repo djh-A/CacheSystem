@@ -28,10 +28,10 @@
     "env": "dev"
   },
   "email": {
-    "host": "smtp.126.com",
+    "host": "xx",
     "port": 25,
-    "user": "shiyuegame@126.com",
-    "password": "123123cc",
+    "user": "xxx",
+    "password": "xxx",
     "subject": "cache-system",
     "to": [
       "893574867@qq.com"
