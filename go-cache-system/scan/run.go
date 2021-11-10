@@ -212,7 +212,7 @@ func goRun(arr []CacheSystemConfig, signalChan chan<- byte) {
 	signalChan <- 1
 }
 
-//处理日期字段
+//Process date field
 //
 func (this *CacheSystemConfig) Date() {
 	for _, field := range dateField {
@@ -261,7 +261,7 @@ func (this *CacheSystemConfig) Day() {
 			date["startDate"] = newStartDate
 			date["endDate"] = newEndDate
 			dateMap[i] = date
-			//替换日期
+			//Replacement date
 			this.Sql = strings.Replace(this.Sql, res[0], fmt.Sprintf("%s BETWEEN '%s' AND '%s'",
 				res[1],
 				newStartDate.Format(util.TIMESTAMPFORMAT),
